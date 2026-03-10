@@ -26,21 +26,12 @@ export default function HomePage() {
             <div className="hero-card">
               <div className="sec-tag">Rules-first AI alignment middleware</div>
               <h1 className="hero-title">
-                Check agent actions before execution with <em>inspectable ethics decisions.</em>
+                Check agent actions with <em>inspectable ethics decisions.</em>
               </h1>
               <p className="hero-desc">
-                EthosGuard blocks harmful, deceptive, or exploitative actions before an
-                autonomous system proceeds. Every verdict includes provenance, triggered
-                principles, and extracted signals.
+                EthosGuard blocks harmful, deceptive, or exploitative actions before an AI
+                system proceeds.
               </p>
-              <div className="hero-actions">
-                <a className="nav-cta" href="#demo">
-                  Open Demo
-                </a>
-                <a className="ghost-cta" href="#engine">
-                  How It Works
-                </a>
-              </div>
               <div className="hero-meta">
                 <div className="meta-pill">No Harm</div>
                 <div className="meta-pill">Radical Honesty</div>
@@ -63,8 +54,7 @@ export default function HomePage() {
               <div className="notice">
                 <strong>Best fit</strong>
                 <p>
-                  Demo mode is rules-first. The strongest portfolio path is to show one
-                  blocked case, one risky case, and one allowed case with provenance.
+                  Best recording flow: blocked first, then allowed, with provenance visible.
                 </p>
               </div>
             </aside>
@@ -106,8 +96,7 @@ export default function HomePage() {
                 Evaluate an AI action and inspect <em>why the verdict happened.</em>
               </h2>
               <p className="section-desc">
-                Use the seeded examples for a clean demo flow. The strongest sequence is
-                blocked first, then allowed, with the provenance panel visible in both.
+                Use a seeded example for the fastest recording flow.
               </p>
             </div>
             <EvaluationForm />

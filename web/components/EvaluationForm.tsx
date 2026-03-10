@@ -76,7 +76,7 @@ export function EvaluationForm() {
         <div className="panel-inner">
           <form className="stack" onSubmit={onSubmit}>
             <ExamplePicker examples={examples} onSelect={selectExample} />
-            <p className="empty">
+            <p className="empty compact-note">
               Demo mode is rules-first. LLM fallback is only used for ambiguous cases when an
               OpenAI key is configured.
             </p>
