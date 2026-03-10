@@ -1,0 +1,23 @@
+{
+  "policy_version": "0.1.0",
+  "principles": [
+    {
+      "name": "No Harm",
+      "code": "no_harm",
+      "severity": "high",
+      "description": "Block actions likely to cause physical, financial, psychological, privacy, or reputational harm."
+    },
+    {
+      "name": "Radical Honesty",
+      "code": "radical_honesty",
+      "severity": "high",
+      "description": "Block deception, concealment of material information, misleading framing, and manipulative omission."
+    },
+    {
+      "name": "Protect the Vulnerable",
+      "code": "protect_vulnerable",
+      "severity": "medium",
+      "description": "Flag or block exploitation of vulnerable parties or unfair power asymmetries."
+    }
+  ]
+}
