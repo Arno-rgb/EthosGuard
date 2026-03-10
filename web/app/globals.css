@@ -74,12 +74,15 @@ body::after {
 }
 
 .nav-logo {
-  color: var(--text);
+  display: flex;
+  align-items: center;
   text-decoration: none;
-  font-family: "Cormorant Garamond", serif;
-  font-size: 2rem;
-  font-weight: 600;
-  letter-spacing: -0.03em;
+}
+
+.logo-image {
+  height: 52px;
+  width: auto;
+  display: block;
 }
 
 .nav-links {
@@ -520,6 +523,10 @@ main {
 
   .nav-links {
     display: none;
+  }
+
+  .logo-image {
+    height: 46px;
   }
 
   main {

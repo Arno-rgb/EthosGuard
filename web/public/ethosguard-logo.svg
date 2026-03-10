@@ -1,0 +1,22 @@
+<svg width="420" height="96" viewBox="0 0 420 96" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">EthosGuard logo</title>
+  <desc id="desc">Shield-inspired monogram and EthosGuard wordmark.</desc>
+  <defs>
+    <linearGradient id="shieldGradient" x1="12" y1="8" x2="84" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3FA6D1"/>
+      <stop offset="1" stop-color="#3271B4"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="88" height="88" rx="24" fill="#0F2035" stroke="url(#shieldGradient)" stroke-width="2"/>
+  <path d="M48 18L70 26V46C70 59.5 61.6 71.4 48 78C34.4 71.4 26 59.5 26 46V26L48 18Z" fill="url(#shieldGradient)" fill-opacity="0.18" stroke="url(#shieldGradient)" stroke-width="2"/>
+  <path d="M38 36H58" stroke="#EEF2F7" stroke-width="4" stroke-linecap="round"/>
+  <path d="M38 48H54" stroke="#EEF2F7" stroke-width="4" stroke-linecap="round"/>
+  <path d="M38 60H50" stroke="#EEF2F7" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="64" cy="62" r="7" fill="#3FA6D1"/>
+  <text x="112" y="58" fill="#EEF2F7" font-family="Cormorant Garamond, Georgia, serif" font-size="44" font-weight="600" letter-spacing="-1.4">
+    EthosGuard
+  </text>
+  <text x="114" y="77" fill="#3FA6D1" font-family="DM Mono, monospace" font-size="11" letter-spacing="2.8">
+    AI ALIGNMENT MIDDLEWARE
+  </text>
+</svg>

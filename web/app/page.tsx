@@ -6,7 +6,7 @@ export default function HomePage() {
       <div className="page-mesh" />
       <nav className="topbar">
         <a className="nav-logo" href="/">
-          EthosGuard
+          <img src="/ethosguard-logo.svg" alt="EthosGuard" className="logo-image" />
         </a>
         <div className="nav-links">
           <a className="nav-link" href="#demo">
