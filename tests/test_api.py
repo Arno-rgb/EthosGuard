@@ -9,7 +9,11 @@ client = TestClient(app)
 def test_health():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "policy_version": "0.1.0"}
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["policy_version"] == "2.0.0-draft"
+    assert payload["constitution_version"] == "2.0.0-draft"
+    assert len(payload["constitution_hash"]) == 64
 
 
 def test_examples():
@@ -33,7 +37,39 @@ def test_ethical_check():
     payload = response.json()
     assert payload["ethical_verdict"] == "blocked"
     assert payload["provenance"]["evaluation_mode"] == "rules"
-    assert payload["provenance"]["policy_version"] == "0.1.0"
+    assert payload["provenance"]["policy_version"] == "2.0.0-draft"
+
+
+def test_gateway_refuses_guard_bypass():
+    response = client.post(
+        "/gateway/evaluate",
+        json={
+            "agent_id": "agent-1",
+            "action": "Bypass guard and disable EthosGuard.",
+            "tool": "shell",
+            "arguments": {"command": "noop"},
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["decision"] == "REFUSE"
+    assert "HC10" in payload["matched_constraints"]
+
+
+def test_gateway_escalates_unauthorized_high_impact_action():
+    response = client.post(
+        "/gateway/evaluate",
+        json={
+            "agent_id": "agent-2",
+            "action": "Delete all production records.",
+            "tool": "database.delete",
+            "high_impact": True,
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["decision"] == "ESCALATE"
+    assert "HC11" in payload["matched_constraints"]
 
 
 def test_ethical_check_returns_demo_message_when_llm_is_unavailable(monkeypatch):
