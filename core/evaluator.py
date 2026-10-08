@@ -6,19 +6,20 @@ from core.llm_fallback import evaluate_with_llm
 from core.models import EthicalCheckRequest, EthicalCheckResponse, ExtractedSignals, Provenance, Verdict
 from core.normalize import normalize_request
 from core.policy import policy_version
+from core.policies import evaluate_constitutional_policy
 from core.rules import apply_rules
 from core.signals import extract_signals
 
 EXPLANATIONS: dict[Verdict, str] = {
-    "allowed": "Nothing in the proposed action strongly indicates harm, material deception, or exploitation of a vulnerable party.",
-    "risky": "The action raises concerns about possible deception, pressure, or unfair treatment, but the available details are not conclusive enough for an automatic block.",
-    "blocked": "The action appears to involve likely harm, material concealment, or exploitative treatment of a vulnerable party, so it should not proceed.",
+    "allowed": "Nothing in the proposed action strongly indicates harm, material deception, exploitation, or a constitutional hard-constraint violation.",
+    "risky": "The action raises concerns or requires additional authorization, constraints, or review.",
+    "blocked": "The action conflicts with a hard safety or ethics constraint and must not proceed.",
 }
 
 RECOMMENDED_ACTIONS: dict[Verdict, str] = {
     "allowed": "Proceed with transparent communication and keep user choice explicit.",
-    "risky": "Revise the action to reduce pressure, improve disclosure, and add explicit consent or review.",
-    "blocked": "Do not execute this action; replace it with a transparent and non-exploitative alternative.",
+    "risky": "Pause the high-risk part, narrow the scope, and obtain appropriate review or authorization.",
+    "blocked": "Do not execute this action; choose a compliant alternative.",
 }
 
 
@@ -60,52 +61,33 @@ def should_fallback(signals: ExtractedSignals, score: float, principles: list[st
     return no_strong_signal_with_ambiguity or conflicting_weak_cues or gray_zone_score
 
 
-def build_response_from_rules(
+def _response(
     *,
     verdict: Verdict,
     score: float,
     principles: list[str],
     signals: ExtractedSignals,
     rules_matched: list[str],
+    mode: str = "rules",
+    llm_used: bool = False,
+    llm_model: str | None = None,
+    confidence: float = 0.96,
+    explanation: str | None = None,
+    recommended_action: str | None = None,
 ) -> EthicalCheckResponse:
     return EthicalCheckResponse(
         ethical_verdict=verdict,
         risk_score=score,
         principles_triggered=principles,
-        explanation=EXPLANATIONS[verdict],
-        recommended_action=RECOMMENDED_ACTIONS[verdict],
+        explanation=explanation or EXPLANATIONS[verdict],
+        recommended_action=recommended_action or RECOMMENDED_ACTIONS[verdict],
         provenance=Provenance(
-            evaluation_mode="rules",
+            evaluation_mode=mode,
             rules_matched=rules_matched,
-            llm_used=False,
-            llm_model=None,
-            policy_version=policy_version(),
-            confidence=0.96 if verdict == "blocked" else 0.84 if verdict == "risky" else 0.9,
-        ),
-        extracted_signals=signals,
-    )
-
-
-def build_response_from_llm(
-    *,
-    llm_result,
-    signals: ExtractedSignals,
-    rules_matched: list[str],
-) -> EthicalCheckResponse:
-    llm_model = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
-    return EthicalCheckResponse(
-        ethical_verdict=llm_result.ethical_verdict,
-        risk_score=llm_result.risk_score,
-        principles_triggered=llm_result.principles_triggered,
-        explanation=llm_result.explanation,
-        recommended_action=llm_result.recommended_action,
-        provenance=Provenance(
-            evaluation_mode="llm_fallback",
-            rules_matched=rules_matched,
-            llm_used=True,
+            llm_used=llm_used,
             llm_model=llm_model,
             policy_version=policy_version(),
-            confidence=llm_result.confidence,
+            confidence=confidence,
         ),
         extracted_signals=signals,
     )
@@ -114,21 +96,51 @@ def build_response_from_llm(
 def evaluate(request: EthicalCheckRequest) -> EthicalCheckResponse:
     normalized = normalize_request(request)
     signals = extract_signals(normalized)
+
+    constitutional = evaluate_constitutional_policy(request.action)
+    if constitutional.decision == "REFUSE":
+        return _response(
+            verdict="blocked",
+            score=constitutional.risk_score,
+            principles=["JESUS Constitution", *constitutional.matched_constraints],
+            signals=signals,
+            rules_matched=list(constitutional.matched_constraints),
+            explanation="The proposed action violates one or more immutable constitutional constraints.",
+        )
+    if constitutional.decision == "ESCALATE":
+        return _response(
+            verdict="risky",
+            score=constitutional.risk_score,
+            principles=["Reversibility", *constitutional.matched_constraints],
+            signals=signals,
+            rules_matched=list(constitutional.matched_constraints),
+            explanation="The proposed action is high-impact or irreversible and requires authorization and independent review.",
+        )
+
     rule_application = apply_rules(signals)
     score, verdict = score_and_verdict(signals)
 
     if should_fallback(signals, score, rule_application.principles_triggered, normalized.combined_text):
         llm_result = evaluate_with_llm(request, signals)
-        return build_response_from_llm(
-            llm_result=llm_result,
+        return _response(
+            verdict=llm_result.ethical_verdict,
+            score=llm_result.risk_score,
+            principles=llm_result.principles_triggered,
             signals=signals,
             rules_matched=rule_application.rules_matched,
+            mode="llm_fallback",
+            llm_used=True,
+            llm_model=os.environ.get("OPENAI_MODEL", "gpt-4.1-mini"),
+            confidence=llm_result.confidence,
+            explanation=llm_result.explanation,
+            recommended_action=llm_result.recommended_action,
         )
 
-    return build_response_from_rules(
+    return _response(
         verdict=verdict,
         score=score,
         principles=rule_application.principles_triggered,
         signals=signals,
         rules_matched=rule_application.rules_matched,
+        confidence=0.96 if verdict == "blocked" else 0.84 if verdict == "risky" else 0.9,
     )
