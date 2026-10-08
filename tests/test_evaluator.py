@@ -71,4 +71,4 @@ def test_policy_version_is_always_present():
             stakeholders=["user"],
         )
     )
-    assert response.provenance.policy_version == "0.1.0"
+    assert response.provenance.policy_version == "2.0.0-draft"
