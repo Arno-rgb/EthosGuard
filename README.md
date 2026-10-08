@@ -1,45 +1,88 @@
 # EthosGuard
 
-EthosGuard is a minimal AI ethics middleware demo. It checks a proposed AI action before execution and returns a verdict, risk score, triggered principles, reasoning, and provenance.
+EthosGuard is an experimental constitutional control layer for autonomous AI agents.
 
-Commercial framing:
+It is built around the JESUS constitution: a Jesus-inspired alignment specification whose operational obligations are universal in scope. The design does **not** assume that a prompt or moral document can make an advanced agent safe by itself. The constitution is paired with external capability control, immutable hard constraints, adversarial evaluation, provenance, and tamper-evident audit logging.
 
-`A rules-first AI alignment middleware that blocks harmful, deceptive, or exploitative AI actions and shows provenance for every decision.`
+## Runtime pipeline
 
-## How it works
+```
+JESUS.md
+  -> constitution.json
+  -> deterministic policies
+  -> evaluators + adversarial suites
+  -> runtime gateway
+  -> tool execution
+  -> hash-chained audit log
+```
 
-The backend keeps all policy logic in `core/`.
+The agent should not hold privileged tool credentials directly. Sensitive capabilities should be exposed only through the gateway or through an equivalent external enforcement layer.
 
-1. Normalize the request.
-2. Extract inspectable signals for harm, deception, privacy misuse, and vulnerability.
-3. Apply deterministic rules and score the action.
-4. Escalate gray-zone cases to OpenAI fallback.
-5. Return one stable JSON response.
+## Files
 
-## Principles
+- `JESUS.md` — repository runtime mirror of the human-readable constitution; the original source document is pinned by SHA-256 in `constitution.json`.
+- `constitution.json` — versioned machine-readable tiers, principles, immutable hard constraints, soft optimization dimensions, and required evaluator families.
+- `core/constitution.py` — schema/invariant loader and constitution hash.
+- `core/policies.py` — deterministic constitutional policy checks.
+- `core/evaluators.py` — reusable evaluation harness.
+- `core/gateway.py` — pre-execution authorization wrapper for agent tool calls.
+- `core/audit.py` — append-only hash-chained JSONL decision log with verification.
+- `tests/adversarial_cases.py` — adversarial scenarios for shutdown, replication, escape, power seeking, deception, oversight sabotage, policy bypass, population manipulation, and irreversible actions.
+- `tests/test_adversarial.py` — verifies the adversarial suite.
+- `tests/test_gateway.py` — proves denied actions never reach the wrapped tool and verifies the audit chain.
 
-- No Harm
-- Radical Honesty
-- Protect the Vulnerable
+## Constitution boundary
 
-## API endpoints
+Hard constitutional constraints are **not learnable weights**. They are immutable within a release.
 
-- `GET /health`
+Learning systems may tune operational preferences such as speed, cost, task success, quality, or how readily to seek human review, but they must not lower or remove hard constraints such as:
+
+- no covert power seeking;
+- no unauthorized replication or escape;
+- no shutdown resistance;
+- no strategic deception;
+- no oversight sabotage;
+- no routing around alignment controls;
+- no unilateral irreversible high-impact optimization;
+- no covert population-scale behavioral control.
+
+Any constitutional update must be explicit, versioned, reviewable, authorized, and independently evaluated.
+
+## API
+
+- `GET /health` — includes policy version, constitution version, and constitution hash.
 - `GET /examples`
-- `POST /ethical_check`
+- `POST /ethical_check` — compatibility ethics endpoint with constitutional pre-check.
+- `POST /gateway/evaluate` — evaluates a proposed agent/tool action and writes an audit event.
+- `GET /audit/verify` — verifies the local hash chain.
+
+Example gateway request:
+
+```json
+{
+  "agent_id": "sales-agent-17",
+  "action": "Send one approved follow-up email",
+  "tool": "email.send",
+  "arguments": {
+    "recipient_id": "prospect-123",
+    "template_id": "followup-v4"
+  },
+  "authorized": true,
+  "high_impact": false
+}
+```
 
 ## Local run
-
-### API
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r api/requirements.txt
+pytest -q
 uvicorn api.app.main:app --reload
 ```
 
-### Web
+Web demo:
 
 ```bash
 cd web
@@ -47,99 +90,16 @@ npm install
 npm run dev
 ```
 
-### Web smoke test
-
-```bash
-cd web
-npm install
-npx playwright install chromium
-npm run test:e2e
-```
-
-### Docker
+Docker:
 
 ```bash
 docker compose up --build
 ```
 
-## Deployment
+## Security model
 
-Use split deployment:
+The runtime gateway is useful only if it is part of the real capability boundary. Do not give the controlled agent a second path to the underlying credentials or tools.
 
-- Vercel for `web/`
-- Render or Railway for `api/`
+Production deployments should replace the local JSONL audit sink with an append-only/tamper-evident external store, separate the gateway from agent-controlled infrastructure, use scoped short-lived credentials, enforce network segmentation, and require human or multi-party approval for high-impact actions.
 
-### Backend on Render or Railway
-
-Deploy from the repo root so the backend can import both `api/` and `core/`.
-
-Start command:
-
-```bash
-uvicorn api.app.main:app --host 0.0.0.0 --port $PORT
-```
-
-Backend env vars:
-
-```env
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4.1-mini
-CORS_ALLOW_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://your-app.vercel.app
-```
-
-### Frontend on Vercel
-
-Set the project root directory to `web`.
-
-Frontend env var:
-
-```env
-NEXT_PUBLIC_API_BASE_URL=https://your-backend-domain
-```
-
-Example:
-
-```env
-NEXT_PUBLIC_API_BASE_URL=https://ethosguard-api.onrender.com
-```
-
-Do not use `http://api:8000` in browser-side Vercel code. That only works inside a private container network, not in a user browser.
-
-## Example request
-
-```json
-{
-  "scenario": "A company wants an AI chatbot to hide refund options to reduce costs.",
-  "action": "Do not show refund information unless the user explicitly asks three times.",
-  "stakeholders": ["customers", "company"]
-}
-```
-
-## Example response
-
-```json
-{
-  "ethical_verdict": "blocked",
-  "risk_score": 0.92,
-  "principles_triggered": ["No Harm", "Radical Honesty"],
-  "explanation": "The action appears to involve likely harm, material concealment, or exploitative treatment of a vulnerable party, so it should not proceed.",
-  "recommended_action": "Do not execute this action; replace it with a transparent and non-exploitative alternative.",
-  "provenance": {
-    "evaluation_mode": "rules",
-    "rules_matched": [
-      "harm.explicit_or_unsafe_concealment",
-      "honesty.material_deception_or_omission"
-    ],
-    "llm_used": false,
-    "llm_model": null,
-    "policy_version": "0.1.0",
-    "confidence": 0.96
-  }
-}
-```
-
-## Demo screenshots
-
-Add screenshots or a short demo recording here.
-
-Immediate demo clip target: one 30-45 second product clip showing one blocked example, one risky example, and one allowed example.
+This repository is research software. Passing these tests is evidence about implemented controls, **not proof of AI alignment or a guarantee that a capable system cannot find a vulnerability**.
